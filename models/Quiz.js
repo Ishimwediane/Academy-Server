@@ -73,3 +73,4 @@ const quizSchema = new mongoose.Schema({
 
 module.exports = mongoose.model('Quiz', quizSchema);
 
+

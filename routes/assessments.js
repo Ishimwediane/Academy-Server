@@ -109,3 +109,4 @@ router.get('/course/:courseId', protect, authorize('trainer', 'admin'), async (r
 
 module.exports = router;
 
+

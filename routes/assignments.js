@@ -317,3 +317,4 @@ router.delete('/:id', protect, authorize('trainer', 'admin'), async (req, res) =
 
 module.exports = router;
 
+

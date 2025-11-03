@@ -26,3 +26,4 @@ Write-Host $envContent
 Write-Host ""
 Write-Host "Now test the connection with: node test-db-connection.js" -ForegroundColor Green
 
+
