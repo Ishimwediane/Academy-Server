@@ -10,6 +10,45 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a course description']
   },
+  shortDescription: {
+    type: String,
+    default: ''
+  },
+  learningObjectives: [{
+    type: String
+  }],
+  whatYouWillLearn: [{
+    type: String
+  }],
+  prerequisites: [{
+    type: String
+  }],
+  courseOutcome: {
+    type: String,
+    default: ''
+  },
+  instructorBio: {
+    type: String,
+    default: ''
+  },
+  language: {
+    type: String,
+    default: 'English'
+  },
+  totalLessons: {
+    type: Number,
+    default: 0
+  },
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalRatings: {
+    type: Number,
+    default: 0
+  },
   category: {
     type: String,
     required: [true, 'Please provide a category'],

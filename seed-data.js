@@ -69,7 +69,33 @@ const seedData = async () => {
     console.log('\n📚 Creating Course 1: Digital Marketing Basics...');
     const course1 = await Course.create({
       title: 'Digital Marketing Basics',
-      description: 'Learn the fundamentals of digital marketing including SEO, social media marketing, content marketing, and email marketing. Perfect for beginners who want to start their digital marketing journey.',
+      description: 'Learn the fundamentals of digital marketing including SEO, social media marketing, content marketing, and email marketing. Perfect for beginners who want to start their digital marketing journey. This comprehensive course will teach you everything you need to know to market your business online effectively.',
+      shortDescription: 'Master the fundamentals of digital marketing and grow your business online.',
+      learningObjectives: [
+        'Understand the digital marketing landscape and its importance',
+        'Learn SEO fundamentals and keyword research',
+        'Master social media marketing strategies',
+        'Create effective content marketing campaigns',
+        'Understand email marketing best practices'
+      ],
+      whatYouWillLearn: [
+        'Digital marketing fundamentals and strategies',
+        'Search Engine Optimization (SEO) techniques',
+        'Social media marketing for business growth',
+        'Content creation and content marketing',
+        'Email marketing campaigns and automation',
+        'Analytics and performance measurement',
+        'Digital advertising basics',
+        'Building a strong online presence'
+      ],
+      prerequisites: [
+        'Basic computer skills',
+        'Internet access',
+        'Willingness to learn'
+      ],
+      courseOutcome: 'By the end of this course, you will be able to create and execute a comprehensive digital marketing strategy for your business, understand how to optimize your online presence, and measure the success of your marketing campaigns.',
+      instructorBio: 'John Trainer is a digital marketing expert with over 10 years of experience helping businesses grow online. He has successfully managed marketing campaigns for hundreds of companies and has a passion for teaching others how to succeed in the digital world.',
+      language: 'English',
       category: 'Marketing',
       trainer: trainer._id,
       level: 'Beginner',
@@ -195,7 +221,33 @@ const seedData = async () => {
     console.log('\n📚 Creating Course 2: Financial Literacy for Entrepreneurs...');
     const course2 = await Course.create({
       title: 'Financial Literacy for Entrepreneurs',
-      description: 'Essential financial management skills for entrepreneurs. Learn budgeting, cash flow management, financial planning, and investment basics. Build confidence in managing your business finances.',
+      description: 'Essential financial management skills for entrepreneurs. Learn budgeting, cash flow management, financial planning, and investment basics. Build confidence in managing your business finances. This course provides practical tools and strategies for making informed financial decisions.',
+      shortDescription: 'Master financial management skills to grow and sustain your business.',
+      learningObjectives: [
+        'Understand business financial statements',
+        'Master budgeting and forecasting techniques',
+        'Learn cash flow management strategies',
+        'Understand investment basics for entrepreneurs',
+        'Develop financial planning skills'
+      ],
+      whatYouWillLearn: [
+        'Reading and understanding financial statements',
+        'Creating and managing business budgets',
+        'Cash flow forecasting and management',
+        'Financial planning and goal setting',
+        'Investment strategies for businesses',
+        'Tax planning basics',
+        'Financial risk management',
+        'Making data-driven financial decisions'
+      ],
+      prerequisites: [
+        'Basic math skills',
+        'Interest in business management',
+        'Calculator or spreadsheet software'
+      ],
+      courseOutcome: 'Upon completion, you will have the knowledge and skills to effectively manage your business finances, make informed financial decisions, and plan for long-term financial success.',
+      instructorBio: 'John Trainer is a certified financial advisor and business consultant with extensive experience in helping entrepreneurs manage their finances. He specializes in financial planning and business growth strategies.',
+      language: 'English',
       category: 'Financial Literacy',
       trainer: trainer._id,
       level: 'Intermediate',
@@ -320,7 +372,35 @@ const seedData = async () => {
     console.log('\n📚 Creating Course 3: Business Management Essentials...');
     const course3 = await Course.create({
       title: 'Business Management Essentials',
-      description: 'Master the fundamentals of business management including leadership, team management, strategic planning, and operations. Perfect for new entrepreneurs and managers.',
+      description: 'Master the fundamentals of business management including leadership, team management, strategic planning, and operations. Perfect for new entrepreneurs and managers. This comprehensive course covers all the essential skills needed to run a successful business.',
+      shortDescription: 'Learn essential business management skills to lead and grow your organization.',
+      learningObjectives: [
+        'Understand core business management principles',
+        'Develop leadership and team management skills',
+        'Master strategic planning and execution',
+        'Learn operations management fundamentals',
+        'Build effective communication and decision-making skills'
+      ],
+      whatYouWillLearn: [
+        'Core business management principles',
+        'Leadership styles and techniques',
+        'Team building and management strategies',
+        'Strategic planning and goal setting',
+        'Operations and process management',
+        'Effective communication in business',
+        'Decision-making frameworks',
+        'Problem-solving techniques',
+        'Performance management',
+        'Building a positive work culture'
+      ],
+      prerequisites: [
+        'Basic understanding of business concepts',
+        'Interest in management and leadership',
+        'Willingness to learn and apply new skills'
+      ],
+      courseOutcome: 'After completing this course, you will be equipped with essential management skills to lead teams effectively, make strategic decisions, and manage business operations successfully.',
+      instructorBio: 'John Trainer is an experienced business consultant and management coach with over 15 years of experience. He has helped hundreds of entrepreneurs and managers develop their leadership and management skills.',
+      language: 'English',
       category: 'Business Management',
       trainer: trainer._id,
       level: 'Beginner',

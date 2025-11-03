@@ -2,6 +2,7 @@ const express = require('express');
 const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
+const Notification = require('../models/Notification');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -81,14 +82,36 @@ router.post('/', protect, async (req, res) => {
     const enrollment = await Enrollment.create({
       student: req.user._id,
       course: courseId,
-      status: 'enrolled'
+      status: 'enrolled',
+      progress: 0,
+      enrolledAt: Date.now()
     });
 
-    // Add student to course
-    course.enrolledStudents.push(req.user._id);
-    await course.save();
+    // Add student to course (only if not already added)
+    if (!course.enrolledStudents.includes(req.user._id)) {
+      course.enrolledStudents.push(req.user._id);
+      await course.save();
+    }
 
-    await enrollment.populate('course', 'title description thumbnail trainer');
+    // Create notification for student
+    await Notification.create({
+      user: req.user._id,
+      type: 'new_course',
+      title: 'Course Enrollment Successful',
+      message: `You have successfully enrolled in "${course.title}". Start learning now!`,
+      link: `/courses/${courseId}`
+    });
+
+    // Create notification for trainer
+    await Notification.create({
+      user: course.trainer,
+      type: 'new_course',
+      title: 'New Student Enrollment',
+      message: `${req.user.name} has enrolled in your course "${course.title}"`,
+      link: `/courses/${courseId}`
+    });
+
+    await enrollment.populate('course', 'title description thumbnail trainer category level');
     await enrollment.populate('student', 'name email');
 
     res.status(201).json({
@@ -128,22 +151,27 @@ router.put('/:id/progress', protect, async (req, res) => {
       });
     }
 
-    // Add lesson to completed lessons if provided
-    if (lessonId && !enrollment.completedLessons.includes(lessonId)) {
-      enrollment.completedLessons.push(lessonId);
+    // Add lesson to completed lessons if provided (mark as complete)
+    if (lessonId) {
+      const lessonIdString = lessonId.toString();
+      const isAlreadyCompleted = enrollment.completedLessons.some(
+        (id) => id.toString() === lessonIdString
+      );
+      
+      if (!isAlreadyCompleted) {
+        enrollment.completedLessons.push(lessonId);
+      }
     }
 
-    // Update progress
-    if (progress !== undefined) {
-      enrollment.progress = Math.min(100, Math.max(0, progress));
-    }
-
-    // Calculate progress from completed lessons
+    // Calculate progress from completed lessons (always recalculate from completed lessons)
     const course = await Course.findById(enrollment.course);
     if (course && course.lessons.length > 0) {
       const totalLessons = course.lessons.length;
       const completedCount = enrollment.completedLessons.length;
       enrollment.progress = Math.round((completedCount / totalLessons) * 100);
+    } else if (progress !== undefined) {
+      // Fallback to provided progress if course has no lessons
+      enrollment.progress = Math.min(100, Math.max(0, progress));
     }
 
     // Update status
