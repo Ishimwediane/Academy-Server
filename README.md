@@ -11,15 +11,18 @@ npm install
 
 2. Configure environment variables in `.env`:
 ```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/iremecorner_academy
+PORT=5001
+NODE_ENV=development
+# MongoDB Atlas credentials
+DB_USER=your_database_username
+DB_PASS=your_database_password
+DB_NAME=Academy
 JWT_SECRET=your_secret_key
 JWT_EXPIRE=7d
-NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 ```
 
-3. Start MongoDB server (if running locally)
+3. Make sure your MongoDB Atlas cluster is accessible
 
 4. Run the server:
 ```bash
@@ -45,8 +48,10 @@ See main README.md for API endpoint documentation.
 ## Environment Variables
 
 Required environment variables:
-- `PORT` - Server port (default: 5000)
-- `MONGODB_URI` - MongoDB connection string
+- `PORT` - Server port (default: 5001)
+- `DB_USER` - MongoDB Atlas database username
+- `DB_PASS` - MongoDB Atlas database password
+- `DB_NAME` - Database name (default: Academy)
 - `JWT_SECRET` - Secret key for JWT tokens
 - `JWT_EXPIRE` - Token expiration time
 - `FRONTEND_URL` - Frontend URL for CORS
