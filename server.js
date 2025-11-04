@@ -10,10 +10,11 @@ dotenv.config();
 const app = express();
 
 // Middleware
-// Allow multiple frontend origins for development
+// Allow multiple frontend origins for development and production
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  'https://ireme-corner-academy.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean); // Remove undefined values
 
@@ -27,12 +28,20 @@ app.use(cors({
       // In development, allow localhost on any port
       if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
         callback(null, true);
+      } else if (origin && origin.includes('vercel.app')) {
+        // Allow all Vercel deployments
+        callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
       }
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

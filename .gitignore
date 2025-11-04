@@ -5,3 +5,21 @@ uploads/
 .DS_Store
 
 
+
+.env
+uploads/
+*.log
+.DS_Store
+
+
+
+.env
+uploads/
+*.log
+.DS_Store
+
+
+
+
+
+
