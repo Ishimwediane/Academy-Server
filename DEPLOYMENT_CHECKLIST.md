@@ -80,3 +80,12 @@ fetch('https://academy-server-f60a.onrender.com/api/courses')
 - Set up alerts if possible
 
 
+
+
+
+
+
+
+
+
+
