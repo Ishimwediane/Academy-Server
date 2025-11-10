@@ -7,6 +7,22 @@ const upload = require('../utils/upload');
 
 const router = express.Router();
 
+// Get all allowed course categories
+router.get('/categories', (req, res) => {
+  const categories = [
+    { name: 'Digital Tools', value: 'Digital Tools' },
+    { name: 'Marketing', value: 'Marketing' },
+    { name: 'Financial Literacy', value: 'Financial Literacy' },
+    { name: 'Business Management', value: 'Business Management' },
+    { name: 'Technical Skills', value: 'Technical Skills' },
+    { name: 'Other', value: 'Other' }
+  ];
+  res.json({
+    success: true,
+    data: categories
+  });
+});
+
 // @route   GET /api/courses
 // @desc    Get all courses (with filters)
 // @access  Public
@@ -75,45 +91,66 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/courses
 // @desc    Create a new course (Trainer/Admin only)
 // @access  Private
-router.post('/', protect, authorize('trainer', 'admin'), upload.single('thumbnail'), [
-  body('title').trim().notEmpty().withMessage('Title is required'),
-  body('description').notEmpty().withMessage('Description is required'),
-  body('category').isIn(['Digital Tools', 'Marketing', 'Financial Literacy', 'Business Management', 'Technical Skills', 'Other']).withMessage('Invalid category')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
+router.post(
+  '/',
+  protect,
+  authorize('trainer', 'admin'),
+  upload.single('thumbnail'),
+  [
+    body('title').trim().notEmpty().withMessage('Title is required'),
+    body('description').notEmpty().withMessage('Description is required'),
+    body('category').isIn([
+      'Digital Tools',
+      'Marketing',
+      'Financial Literacy',
+      'Business Management',
+      'Technical Skills',
+      'Other'
+    ]).withMessage('Invalid category'),
+    body('type').isIn(['free', 'paid']).withMessage('Type must be free or paid'),
+  body('level').isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Level must be Beginner, Intermediate, or Advanced'),
+    body('duration').notEmpty().withMessage('Duration is required')
+  ],
+  async (req, res) => {
+    try {
+      // Debug: log the incoming body
+      console.log('Create course request body:', req.body);
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array()
+        });
+      }
+
+      const courseData = {
+        ...req.body,
+        trainer: req.user._id,
+        status: req.user.role === 'admin' ? 'approved' : 'pending'
+      };
+
+      if (req.file) {
+        courseData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
+      }
+
+      const course = await Course.create(courseData);
+
+      res.status(201).json({
+        success: true,
+        message: 'Course created successfully',
+        data: course
+      });
+    } catch (error) {
+      console.error('Create course error:', error);
+      res.status(500).json({
         success: false,
-        errors: errors.array()
+        message: 'Server error',
+        error: error.message
       });
     }
-
-    const courseData = {
-      ...req.body,
-      trainer: req.user._id,
-      status: req.user.role === 'admin' ? 'approved' : 'pending'
-    };
-
-    if (req.file) {
-      courseData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
-    }
-
-    const course = await Course.create(courseData);
-
-    res.status(201).json({
-      success: true,
-      message: 'Course created successfully',
-      data: course
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
   }
-});
+);
 
 // @route   PUT /api/courses/:id
 // @desc    Update course
@@ -297,6 +334,9 @@ router.post('/:id/rating', protect, [
 });
 
 module.exports = router;
+
+
+
 
 
 

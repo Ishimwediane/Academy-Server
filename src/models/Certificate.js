@@ -11,47 +11,31 @@ const certificateSchema = new mongoose.Schema({
     ref: 'Course',
     required: true
   },
-  enrollment: {
+  trainer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Enrollment',
+    ref: 'User',
     required: true
   },
   certificateNumber: {
     type: String,
-    unique: true,
-    required: true
+    required: true,
+    unique: true
   },
-  issuedAt: {
+  issueDate: {
     type: Date,
     default: Date.now
   },
-  pdfUrl: {
-    type: String
+  template: {
+    type: String,
+    default: 'default'
+  },
+  metadata: {
+    type: Map,
+    of: String,
+    default: {}
   }
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Certificate', certificateSchema);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

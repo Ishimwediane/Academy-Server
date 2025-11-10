@@ -43,12 +43,41 @@ app.use(cors({
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
-app.use(express.json());
+
+// Replace plain express.json() with a version that stores the raw body for debugging
+app.use(express.json({
+  limit: '1mb',
+  verify: (req, res, buf, encoding) => {
+    // store raw body as string for later logging if parse fails
+    try {
+      req.rawBody = buf ? buf.toString(encoding || 'utf8') : '';
+    } catch (e) {
+      req.rawBody = '';
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
 connectDB();
+
+// Add a middleware to catch JSON parse errors (thrown by express.json/body-parser)
+// This must come before route handlers
+app.use((err, req, res, next) => {
+  if (err && err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('Invalid JSON received:', {
+      rawBody: req.rawBody,
+      errorMessage: err.message
+    });
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON in request body',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+  return next(err);
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -84,6 +113,7 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
 

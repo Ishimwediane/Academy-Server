@@ -6,6 +6,9 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Ensure JSON body parsing for this router
+router.use(express.json());
+
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
@@ -74,12 +77,19 @@ router.post('/login', [
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    // Debug incoming body
+    console.log('Login request body:', req.body);
+
+    if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({
         success: false,
-        errors: errors.array()
+        message: 'Empty request body - expected JSON with email and password'
       });
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     const { email, password } = req.body;
@@ -110,26 +120,29 @@ router.post('/login', [
       });
     }
 
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Send response with token and user data
     res.json({
       success: true,
-      message: 'Login successful',
       data: {
+        token,
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
-          phone: user.phone,
           role: user.role,
           avatar: user.avatar
-        },
-        token: generateToken(user._id)
+        }
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: process.env.NODE_ENV === 'development' ? (error.message || 'Server error during login') : 'Something went wrong!',
+      ...(process.env.NODE_ENV === 'development' ? { error: error.stack } : {})
     });
   }
 });
@@ -252,6 +265,8 @@ router.post('/reset-password', [
 });
 
 module.exports = router;
+
+
 
 
 
