@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Assignment = require('../models/Assignment');
 const Course = require('../models/Course');
 const { protect, authorize } = require('../middleware/auth');
+const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 
@@ -11,7 +12,12 @@ const router = express.Router();
 // Configure multer for assignment file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads/assignments'));
+    const uploadPath = path.join(__dirname, '../uploads/assignments');
+    // Ensure the upload directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -316,38 +322,3 @@ router.delete('/:id', protect, authorize('trainer', 'admin'), async (req, res) =
 });
 
 module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

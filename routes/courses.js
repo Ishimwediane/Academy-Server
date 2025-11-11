@@ -127,7 +127,9 @@ router.post(
       const courseData = {
         ...req.body,
         trainer: req.user._id,
-        status: req.user.role === 'admin' ? 'approved' : 'pending'
+        // If a trainer creates a course, it starts as a draft.
+        // Admins can still approve directly.
+        status: req.user.role === 'admin' ? 'approved' : 'draft' // Trainers start courses as drafts
       };
 
       if (req.file) {
@@ -175,7 +177,15 @@ router.put('/:id', protect, upload.single('thumbnail'), async (req, res) => {
 
     const updateData = { ...req.body, updatedAt: Date.now() };
     if (req.file) {
+      // TODO: Add logic to delete old thumbnail if it exists
       updateData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
+    }
+
+    // Trainers can only submit for review (pending) or revert to draft. They cannot approve/reject.
+    if (req.user.role === 'trainer' && updateData.status) {
+      if (!['pending', 'draft'].includes(updateData.status)) {
+      delete updateData.status;
+      }
     }
 
     course = await Course.findByIdAndUpdate(req.params.id, updateData, {
@@ -334,38 +344,3 @@ router.post('/:id/rating', protect, [
 });
 
 module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

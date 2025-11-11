@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const { protect, authorize } = require('../middleware/auth');
+const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 
@@ -12,10 +13,14 @@ const router = express.Router();
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     let uploadPath;
-    if (file.fieldname === 'video') {
+    if (file.fieldname === 'videoFile') {
       uploadPath = path.join(__dirname, '../uploads/videos');
-    } else if (file.fieldname === 'material') {
+    } else if (file.fieldname === 'materials') {
       uploadPath = path.join(__dirname, '../uploads/materials');
+    }
+    // Ensure the upload directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
     } else {
       uploadPath = path.join(__dirname, '../uploads');
     }
@@ -86,8 +91,8 @@ router.get('/:id', async (req, res) => {
 // @desc    Create a new lesson (Trainer/Admin only)
 // @access  Private
 router.post('/', protect, authorize('trainer', 'admin'), upload.fields([
-  { name: 'video', maxCount: 1 },
-  { name: 'material', maxCount: 10 }
+  { name: 'videoFile', maxCount: 1 },
+  { name: 'materials', maxCount: 10 }
 ]), [
   body('title').trim().notEmpty().withMessage('Title is required'),
   body('course').notEmpty().withMessage('Course ID is required')
@@ -123,13 +128,13 @@ router.post('/', protect, authorize('trainer', 'admin'), upload.fields([
     };
 
     // Handle video upload
-    if (req.files && req.files.video) {
-      lessonData.videoFile = `/uploads/videos/${req.files.video[0].filename}`;
+    if (req.files && req.files.videoFile) {
+      lessonData.videoFile = `/uploads/videos/${req.files.videoFile[0].filename}`;
     }
 
     // Handle material uploads
-    if (req.files && req.files.material) {
-      lessonData.materials = req.files.material.map(file => ({
+    if (req.files && req.files.materials) {
+      lessonData.materials = req.files.materials.map(file => ({
         filename: file.filename,
         originalName: file.originalname,
         filePath: `/uploads/materials/${file.filename}`,
@@ -162,8 +167,8 @@ router.post('/', protect, authorize('trainer', 'admin'), upload.fields([
 // @desc    Update lesson
 // @access  Private
 router.put('/:id', protect, authorize('trainer', 'admin'), upload.fields([
-  { name: 'video', maxCount: 1 },
-  { name: 'material', maxCount: 10 }
+  { name: 'videoFile', maxCount: 1 },
+  { name: 'materials', maxCount: 10 }
 ]), async (req, res) => {
   try {
     let lesson = await Lesson.findById(req.params.id).populate('course');
@@ -184,22 +189,32 @@ router.put('/:id', protect, authorize('trainer', 'admin'), upload.fields([
 
     const updateData = { ...req.body, updatedAt: Date.now() };
 
-    // Handle video upload
-    if (req.files && req.files.video) {
-      updateData.videoFile = `/uploads/videos/${req.files.video[0].filename}`;
+    // Handle video upload - if new video is uploaded, it replaces the old one
+    if (req.files && req.files.videoFile) {
+      updateData.videoFile = `/uploads/videos/${req.files.videoFile[0].filename}`;
+      // If a file is uploaded, we should clear any existing URL
+      updateData.videoUrl = '';
+    } else if (updateData.videoUrl) {
+      // If a URL is provided, we should clear any existing file
+      updateData.videoFile = null;
     }
 
-    // Handle material uploads
-    if (req.files && req.files.material) {
-      const newMaterials = req.files.material.map(file => ({
+    // Handle material uploads and removals
+    let existingMaterials = [];
+    if (req.body.existingMaterials) {
+      existingMaterials = JSON.parse(req.body.existingMaterials);
+    }
+    let newMaterials = [];
+    if (req.files && req.files.materials) {
+      newMaterials = req.files.materials.map(file => ({
         filename: file.filename,
         originalName: file.originalname,
         filePath: `/uploads/materials/${file.filename}`,
         fileType: path.extname(file.originalname),
         fileSize: file.size
       }));
-      updateData.materials = [...(lesson.materials || []), ...newMaterials];
     }
+    updateData.materials = [...existingMaterials, ...newMaterials];
 
     lesson = await Lesson.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
@@ -262,38 +277,3 @@ router.delete('/:id', protect, authorize('trainer', 'admin'), async (req, res) =
 });
 
 module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
