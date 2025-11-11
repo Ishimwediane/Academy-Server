@@ -88,6 +88,7 @@ app.use('/api/enrollments', require('./routes/enrollments'));
 app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/quizzes', require('./routes/quizzes'));
 app.use('/api/assessments', require('./routes/assessments'));
+app.use('/api/live-sessions', require('./routes/live-sessions'));
 app.use('/api/certificates', require('./routes/certificates'));
 app.use('/api/ai-assistant', require('./routes/aiAssistant'));
 app.use('/api/notifications', require('./routes/notifications'));
@@ -113,17 +114,3 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
