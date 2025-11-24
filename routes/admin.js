@@ -126,6 +126,34 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/users/:id
+// @desc    Get a single user by ID
+// @access  Private/Admin
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+
+
 // @route   GET /api/admin/courses
 // @desc    Get all courses with filters
 // @access  Private/Admin
@@ -253,41 +281,3 @@ router.get('/reports/course-popularity', async (req, res) => {
 });
 
 module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
