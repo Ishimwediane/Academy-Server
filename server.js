@@ -57,7 +57,7 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
 
 // Database Connection
 connectDB();
@@ -94,6 +94,7 @@ app.use('/api/ai-assistant', require('./routes/aiAssistant'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/discussions', require('./routes/discussions'));
+app.use('/api/progress', require('./routes/progress'));
 
 // Health check
 app.get('/api/health', (req, res) => {

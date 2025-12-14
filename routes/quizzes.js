@@ -29,6 +29,29 @@ router.get('/course/:courseId', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/quizzes/lesson/:lessonId
+// @desc    Get all quizzes for a lesson
+// @access  Private
+router.get('/lesson/:lessonId', protect, async (req, res) => {
+  try {
+    const quizzes = await Quiz.find({ lesson: req.params.lessonId })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: quizzes.length,
+      data: quizzes
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+
 // @route   GET /api/quizzes/:id
 // @desc    Get quiz by ID
 // @access  Private

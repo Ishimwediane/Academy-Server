@@ -40,6 +40,12 @@ const quizSchema = new mongoose.Schema({
     type: Number,
     default: 100
   },
+  passingPercent: {
+    type: Number,
+    default: 70,
+    min: 0,
+    max: 100,
+  },
   timeLimit: {
     type: Number // in minutes
   },

@@ -14,15 +14,17 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     let uploadPath;
     if (file.fieldname === 'videoFile') {
-      uploadPath = path.join(__dirname, '../uploads/videos');
+      uploadPath = path.resolve(__dirname, '../uploads/videos');
     } else if (file.fieldname === 'materials') {
-      uploadPath = path.join(__dirname, '../uploads/materials');
+      uploadPath = path.resolve(__dirname, '../uploads/materials');
+    } else {
+      // A default path in case of unexpected field names
+      uploadPath = path.resolve(__dirname, '../uploads/others');
     }
+    
     // Ensure the upload directory exists
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
-    } else {
-      uploadPath = path.join(__dirname, '../uploads');
     }
     cb(null, uploadPath);
   },
@@ -93,10 +95,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', protect, authorize('trainer', 'admin'), upload.fields([
   { name: 'videoFile', maxCount: 1 },
   { name: 'materials', maxCount: 10 }
-]), [
-  body('title').trim().notEmpty().withMessage('Title is required'),
-  body('course').notEmpty().withMessage('Course ID is required')
-], async (req, res) => {
+]), async (req, res) => {
+  // Manual validation
+  await body('title').trim().notEmpty().withMessage('Title is required').run(req);
+  await body('course').notEmpty().withMessage('Course ID is required').run(req);
+
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -170,6 +173,11 @@ router.put('/:id', protect, authorize('trainer', 'admin'), upload.fields([
   { name: 'videoFile', maxCount: 1 },
   { name: 'materials', maxCount: 10 }
 ]), async (req, res) => {
+  await body('title').optional().trim().notEmpty().withMessage('Title cannot be empty').run(req);
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     let lesson = await Lesson.findById(req.params.id).populate('course');
     if (!lesson) {
