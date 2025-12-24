@@ -2,12 +2,93 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const http = require('http');
+const socketIO = require('socket.io');
 const connectDB = require('./config/db');
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+
+// Socket.IO setup
+const io = socketIO(server, {
+  cors: {
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://ireme-corner-academy.vercel.app',
+        process.env.FRONTEND_URL
+      ].filter(Boolean);
+
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
+        callback(null, true);
+      } else if (origin && origin.includes('vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  },
+});
+
+// Store online users
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // User joins with their ID
+  socket.on('join', (userId) => {
+    onlineUsers.set(userId, socket.id);
+    console.log(`User ${userId} joined`);
+
+    // Notify others that user is online
+    socket.broadcast.emit('user-online', userId);
+  });
+
+  // Handle sending messages
+  socket.on('send-message', (data) => {
+    const { receiverId, message } = data;
+    const receiverSocketId = onlineUsers.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('receive-message', message);
+    }
+  });
+
+  // Handle typing indicator
+  socket.on('typing', (data) => {
+    const { receiverId, isTyping } = data;
+    const receiverSocketId = onlineUsers.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('user-typing', { userId: data.senderId, isTyping });
+    }
+  });
+
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    // Find and remove user from online users
+    for (const [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+        socket.broadcast.emit('user-offline', userId);
+        console.log(`User ${userId} disconnected`);
+        break;
+      }
+    }
+  });
+});
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Middleware
 // Allow multiple frontend origins for development and production
@@ -95,6 +176,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/discussions', require('./routes/discussions'));
 app.use('/api/progress', require('./routes/progress'));
+app.use('/api/messages', require('./routes/messages'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -104,14 +186,15 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    success: false, 
-    message: 'Something went wrong!', 
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 WebSocket server ready`);
 });

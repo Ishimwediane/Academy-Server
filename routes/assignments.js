@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
@@ -37,6 +37,7 @@ router.get('/course/:courseId', protect, async (req, res) => {
   try {
     const assignments = await Assignment.find({ course: req.params.courseId })
       .populate('lesson', 'title')
+      .populate('submissions.student', 'name email')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -82,7 +83,8 @@ router.get('/:id', protect, async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
       .populate('course', 'title trainer')
-      .populate('lesson', 'title');
+      .populate('lesson', 'title')
+      .populate('submissions.student', 'name email');
 
     if (!assignment) {
       return res.status(404).json({

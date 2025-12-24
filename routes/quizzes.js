@@ -13,6 +13,7 @@ router.get('/course/:courseId', protect, async (req, res) => {
   try {
     const quizzes = await Quiz.find({ course: req.params.courseId })
       .populate('lesson', 'title')
+      .populate('attempts.student', 'name email')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -292,7 +293,7 @@ router.delete('/:id', protect, authorize('trainer', 'admin'), async (req, res) =
   } catch (error) {
     res.status(500).json({
       success: false,
-        message: 'Server error',
+      message: 'Server error',
       error: error.message
     });
   }

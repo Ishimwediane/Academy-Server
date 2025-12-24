@@ -3,9 +3,32 @@ const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Notification = require('../models/Notification');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
+
+// @route   GET /api/enrollments/course/:courseId/students
+// @desc    Get all students enrolled in a course (Trainer/Admin)
+// @access  Private
+router.get('/course/:courseId/students', protect, authorize('trainer', 'admin'), async (req, res) => {
+  try {
+    const enrollments = await Enrollment.find({ course: req.params.courseId })
+      .populate('student', 'name email avatar')
+      .sort({ enrolledAt: -1 });
+
+    res.json({
+      success: true,
+      count: enrollments.length,
+      data: enrollments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
 
 // @route   GET /api/enrollments
 // @desc    Get user's enrollments
@@ -157,7 +180,7 @@ router.put('/:id/progress', protect, async (req, res) => {
       const isAlreadyCompleted = enrollment.completedLessons.some(
         (id) => id.toString() === lessonIdString
       );
-      
+
       if (!isAlreadyCompleted) {
         enrollment.completedLessons.push(lessonId);
       }
@@ -216,8 +239,8 @@ router.get('/:id', protect, async (req, res) => {
     }
 
     // Check if user owns this enrollment or is trainer/admin
-    if (enrollment.student._id.toString() !== req.user._id.toString() && 
-        req.user.role !== 'trainer' && req.user.role !== 'admin') {
+    if (enrollment.student._id.toString() !== req.user._id.toString() &&
+      req.user.role !== 'trainer' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view this enrollment'
