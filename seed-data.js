@@ -47,7 +47,7 @@ const seedData = async () => {
     // Create or get trainer
     console.log('\n👨‍🏫 Creating trainer...');
     let trainer = await User.findOne({ email: 'trainer@iremecorner.com' });
-    
+
     if (!trainer) {
       const hashedPassword = await bcrypt.hash('Trainer123!', 10);
       trainer = await User.create({
@@ -86,6 +86,28 @@ const seedData = async () => {
       await admin.save();
       console.log('✅ Admin found:', admin.email);
     }
+
+    // Create Diane trainer
+    console.log('\n👨‍🏫 Creating Diane trainer...');
+    let dianeTrainer = await User.findOne({ email: 'ishimwediane@gmail.com' });
+
+    if (!dianeTrainer) {
+      const hashedPassword = await bcrypt.hash('@Diane123', 10);
+      dianeTrainer = await User.create({
+        name: 'Diane Ishimwe',
+        email: 'ishimwediane@gmail.com',
+        password: hashedPassword,
+        role: 'trainer',
+        isActive: true,
+      });
+      console.log('✅ Diane trainer created:', dianeTrainer.email);
+    } else {
+      dianeTrainer.role = 'trainer';
+      dianeTrainer.isActive = true;
+      await dianeTrainer.save();
+      console.log('✅ Diane trainer found:', dianeTrainer.email);
+    }
+
 
     // Course 1: Digital Marketing Basics
     console.log('\n📚 Creating Course 1: Digital Marketing Basics...');

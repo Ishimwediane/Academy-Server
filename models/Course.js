@@ -33,6 +33,7 @@ const courseSchema = new mongoose.Schema({
   },
   language: {
     type: String,
+    enum: ['English', 'Kinyarwanda'],
     default: 'English'
   },
   totalLessons: {

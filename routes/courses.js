@@ -108,7 +108,7 @@ router.post(
       'Other'
     ]).withMessage('Invalid category'),
     body('type').isIn(['free', 'paid']).withMessage('Type must be free or paid'),
-  body('level').isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Level must be Beginner, Intermediate, or Advanced'),
+    body('level').isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Level must be Beginner, Intermediate, or Advanced'),
     body('duration').notEmpty().withMessage('Duration is required')
   ],
   async (req, res) => {
@@ -184,7 +184,7 @@ router.put('/:id', protect, upload.single('thumbnail'), async (req, res) => {
     // Trainers can only submit for review (pending) or revert to draft. They cannot approve/reject.
     if (req.user.role === 'trainer' && updateData.status) {
       if (!['pending', 'draft'].includes(updateData.status)) {
-      delete updateData.status;
+        delete updateData.status;
       }
     }
 
@@ -196,6 +196,56 @@ router.put('/:id', protect, upload.single('thumbnail'), async (req, res) => {
     res.json({
       success: true,
       message: 'Course updated successfully',
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// @route   PATCH /api/courses/:id/approve
+// @desc    Approve or reject a course (Admin only)
+// @access  Private/Admin
+router.patch('/:id/approve', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { status, rejectionReason } = req.body;
+
+    // Validate status
+    if (!status || !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be either "approved" or "rejected"'
+      });
+    }
+
+    // Find course
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Update course status
+    course.status = status;
+    if (status === 'rejected' && rejectionReason) {
+      course.rejectionReason = rejectionReason;
+    }
+    course.updatedAt = Date.now();
+
+    await course.save();
+
+    // Populate trainer info for response
+    await course.populate('trainer', 'name email');
+
+    res.json({
+      success: true,
+      message: `Course ${status} successfully`,
       data: course
     });
   } catch (error) {
