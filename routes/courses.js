@@ -132,6 +132,23 @@ router.post(
         status: req.user.role === 'admin' ? 'approved' : 'draft' // Trainers start courses as drafts
       };
 
+      // Parse JSON array fields if they exist
+      if (req.body.whatYouWillLearn) {
+        try {
+          courseData.whatYouWillLearn = JSON.parse(req.body.whatYouWillLearn);
+        } catch (e) {
+          console.error('Error parsing whatYouWillLearn:', e);
+        }
+      }
+
+      if (req.body.learningObjectives) {
+        try {
+          courseData.learningObjectives = JSON.parse(req.body.learningObjectives);
+        } catch (e) {
+          console.error('Error parsing learningObjectives:', e);
+        }
+      }
+
       if (req.file) {
         courseData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
       }

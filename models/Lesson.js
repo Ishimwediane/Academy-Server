@@ -23,6 +23,9 @@ const lessonSchema = new mongoose.Schema({
   videoFile: {
     type: String // Path to uploaded video
   },
+  imageUrl: {
+    type: String // Cloudinary or external image URL
+  },
   materials: [{
     filename: String,
     originalName: String,
