@@ -76,72 +76,128 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-// @route   POST /api/certificates/generate/:enrollmentId
-// @desc    Generate certificate for completed course
+// @route   GET /api/certificates/course/:courseId
+// @desc    Get all certificates for a specific course (Trainer/Admin only)
 // @access  Private
-router.post('/generate/:enrollmentId', protect, async (req, res) => {
+router.get('/course/:courseId', protect, async (req, res) => {
   try {
-    const enrollment = await Enrollment.findById(req.params.enrollmentId)
-      .populate('course')
-      .populate('student');
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check authorization
+    if (course.trainer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view certificates for this course'
+      });
+    }
+
+    const certificates = await Certificate.find({ course: req.params.courseId })
+      .populate('student', 'name email')
+      .sort({ issuedAt: -1 });
+
+    res.json({
+      success: true,
+      count: certificates.length,
+      data: certificates
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/certificates/issue
+// @desc    Issue a certificate to a student (Trainer/Admin only)
+// @access  Private
+router.post('/issue', protect, async (req, res) => {
+  try {
+    const { studentId, courseId } = req.body;
+
+    if (!studentId || !courseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student ID and Course ID are required'
+      });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check authorization (Trainer or Admin)
+    if (course.trainer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to issue certificates for this course'
+      });
+    }
+
+    // Find enrollment
+    const enrollment = await Enrollment.findOne({
+      student: studentId,
+      course: courseId
+    });
 
     if (!enrollment) {
       return res.status(404).json({
         success: false,
-        message: 'Enrollment not found'
+        message: 'Enrollment not found for this student in this course'
       });
     }
 
-    // Check if user owns this enrollment
-    if (enrollment.student._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized'
-      });
-    }
-
-    // Check if course is completed
-    if (enrollment.status !== 'completed' || enrollment.progress < 100) {
+    // Check completion
+    if (enrollment.status !== 'completed' && enrollment.progress < 100) {
       return res.status(400).json({
         success: false,
-        message: 'Course must be completed to generate certificate'
+        message: 'Student has not completed the course yet'
       });
     }
 
-    // Check if certificate already exists
+    // Check if duplicate
     const existingCertificate = await Certificate.findOne({
-      student: enrollment.student._id,
-      course: enrollment.course._id
+      student: studentId,
+      course: courseId
     });
 
     if (existingCertificate) {
-      return res.json({
-        success: true,
-        message: 'Certificate already exists',
-        data: existingCertificate
+      return res.status(400).json({
+        success: false,
+        message: 'Certificate already issued to this student'
       });
     }
 
-    // Generate certificate
+    // Issue Certificate
     const certificate = await Certificate.create({
-      student: enrollment.student._id,
-      course: enrollment.course._id,
+      student: studentId,
+      course: courseId,
       enrollment: enrollment._id,
+      issuedBy: req.user._id,
       certificateNumber: generateCertificateNumber()
     });
 
-    // Mark enrollment as certificate issued
+    // Update enrollment
     enrollment.certificateIssued = true;
     await enrollment.save();
 
-    await certificate.populate('course', 'title description thumbnail');
-    await certificate.populate('student', 'name email');
-
     res.status(201).json({
       success: true,
-      message: 'Certificate generated successfully',
+      message: 'Certificate issued successfully',
       data: certificate
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,

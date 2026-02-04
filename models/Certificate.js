@@ -16,6 +16,11 @@ const certificateSchema = new mongoose.Schema({
     ref: 'Enrollment',
     required: true
   },
+  issuedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   certificateNumber: {
     type: String,
     unique: true,
