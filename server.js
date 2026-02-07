@@ -177,6 +177,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/discussions', require('./routes/discussions'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/contact', require('./routes/contact'));
 
 // Health check
 app.get('/api/health', (req, res) => {
