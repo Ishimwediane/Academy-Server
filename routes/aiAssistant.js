@@ -37,8 +37,8 @@ const getAIResponse = (message, user, courses, enrollments) => {
     });
 
     const topCategory = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a])[0];
-    
-    const recommendations = courses.filter(c => 
+
+    const recommendations = courses.filter(c =>
       c.category === topCategory && !enrollments.some(e => e.course?._id?.toString() === c._id.toString())
     ).slice(0, 3);
 
@@ -58,7 +58,7 @@ const getAIResponse = (message, user, courses, enrollments) => {
 
     const completedCount = enrollments.filter(e => e.status === 'completed').length;
     const inProgressCount = enrollments.filter(e => e.status === 'in-progress').length;
-    
+
     return `Great progress! You've completed ${completedCount} course(s) and have ${inProgressCount} course(s) in progress. Keep up the excellent work!`;
   }
 
@@ -78,7 +78,7 @@ What would you like to know?`;
 };
 
 // @route   POST /api/ai-assistant/chat
-// @desc    Chat with AI assistant
+// @desc    Chat with AI assistant (Gemini Integration)
 // @access  Private
 router.post('/chat', protect, [
   body('message').trim().notEmpty().withMessage('Message is required')
@@ -92,28 +92,82 @@ router.post('/chat', protect, [
       });
     }
 
-    const { message } = req.body;
+    const { message, context } = req.body;
+    const user = req.user;
 
-    // Get user's enrollments
-    const enrollments = await Enrollment.find({ student: req.user._id })
-      .populate('course', 'title category');
+    // Get user's enrollments and progress
+    const enrollments = await Enrollment.find({ student: user._id })
+      .populate('course', 'title category description level')
+      .lean();
 
-    // Get available courses
-    const courses = await Course.find({ status: 'approved' })
-      .select('title category description')
-      .limit(20);
+    // Get available courses for recommendations
+    const allCourses = await Course.find({ status: 'approved' })
+      .select('title category description level price')
+      .limit(20)
+      .lean();
 
-    // Get AI response
-    const response = getAIResponse(message, req.user, courses, enrollments);
+    // Initialize Gemini
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+    // Check if API key exists
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn('GEMINI_API_KEY is not set. Falling back to rule-based response.');
+      const response = getAIResponse(message, user, allCourses, enrollments);
+      return res.json({
+        success: true,
+        data: {
+          message: response,
+          timestamp: new Date()
+        }
+      });
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    // Construct system prompt with user context
+    let systemPrompt = `You are Nuru, an AI Career and Learning Guide for IremeHub Academy. 
+    Your goal is to help students navigate their career paths, recommend courses, and provide learning advice.
+    
+    User Profile:
+    - Name: ${user.name}
+    - Role: ${user.role}
+    - Email: ${user.email}
+    
+    Current Enrollments:
+    ${enrollments.map(e => `- ${e.course.title} (${e.course.category}) - Status: ${e.status}, Progress: ${e.progress}%`).join('\n') || "None"}
+    
+    Available Courses Catalog (Use this to recommend courses):
+    ${allCourses.map(c => `- ${c.title} (${c.category}) - Level: ${c.level}`).join('\n')}
+    
+    Instructions:
+    1. Be encouraging, professional, and helpful.
+    2. If the user asks about career paths, relate your answer to the available courses on IremeHub.
+    3. If the user asks for course recommendations, check their current enrollments and suggest relevant new courses from the catalog.
+    4. Keep responses concise (under 150 words) unless detailed advice is requested.
+    5. Personalize the response using the user's name and progress.
+    6. If the context is explicitly about "career_guidance", focus on long-term career goals and skill building.
+    
+    User Query: ${message}`;
+
+    if (context === 'career_guidance') {
+      systemPrompt += `\nContext: The user is specifically asking for career guidance. Focus on professional development and career paths.`;
+    }
+
+    const result = await model.generateContent(systemPrompt);
+    const aiResponse = result.response.text();
 
     res.json({
       success: true,
       data: {
-        message: response,
+        message: aiResponse,
         timestamp: new Date()
       }
     });
+
   } catch (error) {
+    console.error('Gemini API Error:', error);
+    // Fallback if AI fails
     res.status(500).json({
       success: false,
       message: 'Server error',
